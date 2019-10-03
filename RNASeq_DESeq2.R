@@ -1,4 +1,4 @@
-setwd("~/RNAseq/AnalysisR")
+setwd("~/RNAseq/AnalysisR/Differential-Expression-Analysis-RNASeq/")
 
 
 library(tidyverse)
@@ -28,10 +28,10 @@ library(org.Mm.eg.db)
 library(pathview)
 
 # Read counts from raw data and create DDS matrix for further DE analysis. 
-# Give genotyep and create a condition column with number of replicates
+# Give genotype and create a condition column with number of replicates
 # point the condition columns to the columns in the raw data 
 
-counts <- read.table('/Users/hari/RNAseq/AnalysisR/Repcounts.txt', header = TRUE, row.names = 1)
+counts <- read.table('./data/Repcounts.txt', header = TRUE, row.names = 1)
 counts <- counts[6:ncol(counts)]
 genotype <- c("wt","wt","wt","wt","wt",'HSP1', 'HSP1','HSP1','HSP1','HSP1',"wt","wt","wt","wt","wt")
 condition <- c(rep("Untreated",5),rep("HPS_untreated",5),rep("REP",5))
@@ -60,8 +60,7 @@ annotation <- colData %>% dplyr::select(condition)
 pheatmap(vsd_dds_cor, annotation = annotation, fontsize = 20)
 
 # Unsupervised clustering analysis using PCA analysis 
-# the below code commented out didnot work for transformed values
-#plotPCA(vsd_dds, intgroup = 'condition') so used rlogtransformation which is same
+
 rld <- rlogTransformation(dds, blind = TRUE)
 plotPCA(rld, intgroup = 'condition')+
   geom_point(size=10)+
@@ -84,7 +83,7 @@ plotMA(res_REPLFC, ylim = c(-8,8))
 mcols(res_REPLFC)
 #uncomment to run
 print(summary(res_REP))
-sink('/Users/hari/RNAseq/AnalysisR/output_data/rep_wt_summary.txt')
+sink('./data/rep_wt_summary.txt')
 print(summary(res_REPLFC))
 sink()
 
@@ -99,7 +98,7 @@ plotMA(res_HPSLFC, ylim = c(-8,8))
 mcols(res_HPSLFC)
 # uncomment to run
 print(summary(res_HPSLFC))
-sink( '/Users/hari/RNAseq/AnalysisR/output_data/HPS_wt_summary.txt')
+sink( './data/HPS_wt_summary.txt')
 print(summary(res_HPSLFC))
 sink()
 
@@ -116,7 +115,9 @@ all_genes<- merge(Gm,Ig)
 all_genes <- all_genes[!duplicated(all_genes$ensgene),] 
 
 #Found some pseudo genes and ig genes and filtering for pseudogenes and ig. it is not necessary but just to see what happens
-#write.csv(as.data.frame(all_genes), file = '/Users/hari/RNAseq/AnalysisR/output_data/all_genes.csv', row.names = FALSE)
+
+#write.csv(as.data.frame(all_genes), file = './data/all_genes.csv', row.names = FALSE)
+
 # Annotating genes in HPS vs Untreateds data 
 
 res_HPS_genes <- data.frame(res_HPSLFC) %>% 
@@ -130,27 +131,31 @@ sum(all_HPS_genes$padj < 0.05, na.rm = TRUE)
 REP_genes <- all_genes %>% filter(padj < 0.05) %>% arrange(padj)
 HPS_genes <- all_HPS_genes %>% filter(padj < 0.05) %>% arrange(padj)
 # uncomment to write to CSV file 
-#write.csv(as.data.frame(REP_genes), file = '/Users/hari/RNAseq/AnalysisR/output_data/Rep_vs_wt_DE_genes.csv', row.names = FALSE)
-#write.csv(as.data.frame(all_HPS_genes), file = '/Users/hari/RNAseq/AnalysisR/output_data/HPS_genes.csv', row.names = FALSE)
+#write.csv(as.data.frame(REP_genes), file = './data/Rep_vs_wt_DE_genes.csv', row.names = FALSE)
+#write.csv(as.data.frame(all_HPS_genes), file = './data/HPS_genes.csv', row.names = FALSE)
 # HPS vs Untreated
 # reading files gave 5655 genes
-DE_rep_genes  <-  read.csv('/Users/hari/RNAseq/AnalysisR/output_data/Rep_vs_wt_DE_genes.csv', stringsAsFactors = FALSE)
-DE_rep_genes <- DE_rep_genes[!duplicated(DE_rep_genes$symbol),] 
-DE_rep_genes_up <- DE_rep_genes %>%  
-                  filter(log2FoldChange >0) %>% 
-                  arrange(padj)
-DE_rep_genes_down <- DE_rep_genes %>%  
-  filter(log2FoldChange < -1) %>% 
-  arrange(padj)
+DE_rep_genes  <-  read.csv('./data/Rep_vs_wt_DE_genes.csv', stringsAsFactors = FALSE)
+DE_rep_genes <- DE_rep_genes[!duplicated(DE_rep_genes$ensgene),] 
+
+# DE_rep_genes_down <- DE_rep_genes %>%  
+#   filter(log2FoldChange < -1) %>% 
+#   arrange(padj)
 
 # Writing up and down genes for analysis
-#write.csv(as.data.frame(DE_rep_genes_up), file = '/Users/hari/RNAseq/AnalysisR/output_data//DE_rep_genes_up.csv', row.names = FALSE)
-#write.csv(as.data.frame(DE_rep_genes_down), file = '/Users/hari/RNAseq/AnalysisR/output_data/DE_rep_genes_down.csv', row.names = FALSE)
+#write.csv(as.data.frame(DE_rep_genes_up), file = './data/DE_rep_genes_up.csv', row.names = FALSE)
+#write.csv(as.data.frame(DE_rep_genes_down), file = './data/DE_rep_genes_down.csv', row.names = FALSE)
 #results_Rep_Untreated <- results_Rep_Untreated[!duplicated(results_Rep_Untreated$ensgene),] 
 # drop NAs
-DE_rep_genes <-DE_rep_genes  %>% drop_na()  %>% arrange(padj)
-Rep_Untreated_DE_genes<-subset(DE_rep_genes[8:23])
+Rep_Untreated_DE_genes <- DE_rep_genes  %>% 
+                          drop_na() %>%  
+                          filter(log2FoldChange >1 | log2FoldChange < -1) %>%  
+                           arrange(padj)
+Rep_Untreated_DE_genes<-subset(Rep_Untreated_DE_genes , select = c('symbol', "WT2", "WT3", "WT4",
+                                                        "WT5", "WT6", "REP16", "REP17", 'REP18', "REP19", "REP20"))
+
 Rep_Untreated_DE_genes <- Rep_Untreated_DE_genes %>% remove_rownames %>% column_to_rownames(var="symbol")
+
 sum(is.na(DE_rep_genes))
 str(Rep_Untreated_DE_genes)
 
@@ -166,16 +171,15 @@ pheatmap(Rep_Untreated_DE_genes,
          annotation = annotation,  fontsize = 15,
          scale = 'row')
 
-
-top_50_Rep <-DE_rep_genes %>%  
-  filter(log2FoldChange >1 | log2FoldChange < -1) %>% 
-  arrange(padj) %>% 
-  dplyr::slice(1:50)
-Heatmap_top_50_Rep <- subset(top_50_Rep[8:23])
-Heatmap_top_50_Rep<- Heatmap_top_50_Rep %>% remove_rownames %>% column_to_rownames(var="symbol")
+# 
+top_75_Rep <-DE_rep_genes %>% drop_na() %>% 
+            arrange(padj) %>%
+            filter(log2FoldChange >1 | log2FoldChange < -1) %>%
+             dplyr::slice(1:75) %>% dplyr::select(8:12, 18:23) %>% 
+            remove_rownames %>% column_to_rownames(var="symbol")
 
 heat_colors <- brewer.pal(n = 11, name = "RdBu")
-pheatmap(Heatmap_top_50_Rep,
+pheatmap(top_75_Rep,
          color = heat_colors, 
          cluster_rows = T, 
          show_rownames = T,
@@ -183,11 +187,11 @@ pheatmap(Heatmap_top_50_Rep,
          scale = 'row', fontsize = 10,cex =  1.25,
          clustering_distance_rows = "correlation",#Pearson's
          # clustering_method = "average",
-         fontsize_row=7)
+         fontsize_row=6)
 
 # heat map for HPSvs Untreated
 
-results_HPS_Untreated <-  read.csv('/Users/hari/RNAseq/AnalysisR/output_data/HPS_genes.csv', stringsAsFactors = FALSE)
+results_HPS_Untreated <-  read.csv('./data/HPS_genes.csv', stringsAsFactors = FALSE)
 results_HPS_Untreated <- results_HPS_Untreated[!duplicated(results_HPS_Untreated$ensgene),] 
 HPS_Untreated_DE_genes <- results_HPS_Untreated  %>% 
                           drop_na() %>%  
@@ -304,15 +308,11 @@ top_25_down_genes = DE_rep_genes %>%
   filter(log2FoldChange < -1, padj< 0.05) %>% 
   arrange(padj)%>% dplyr::slice(1:25)
 
-
-#write.csv(as.data.frame(top_down_genes), file = '/Users/hari/RNAseq/AnalysisR/Output_files/downregulatedinrep.csv')
-#write.csv(as.data.frame(top_down_genes), file = '/Users/hari/RNAseq/AnalysisR/Output_files/top50downregulatedinrep.csv')
-
 volcano_plot <- ggplot(data=DE_rep_genes, aes(x=log2FoldChange, y=-log10(padj))) +
   geom_point(data=DE_rep_genes, size=1, colour="gray", aes(text = symbol)) +
   geom_point(data=DE_rep_genes[DE_rep_genes$up==TRUE, ], size=2, colour="Red",aes(text = symbol)) +
   geom_point(data=DE_rep_genes[DE_rep_genes$down  ==TRUE, ], size=2, colour="Blue",aes(text = symbol)) +
-  #geom_point(aes(text = Genename))+
+  
   xlab("log2 fold change") +
   ylab("-log10 p-value adjusted") +
   ggtitle("WT Rep Bleo vs WT Untreated")+
@@ -320,7 +320,6 @@ volcano_plot <- ggplot(data=DE_rep_genes, aes(x=log2FoldChange, y=-log10(padj)))
   geom_vline(xintercept = -1, colour="blue", linetype="dashed")+
   geom_text_repel(data=top_25_upreg_genes , aes(label=symbol), size = 4)+
   geom_text_repel(data=top_25_down_genes, aes(label=symbol), size = 4)+
-  #scale_x_continuous() +
   xlim(-10,10)+
   scale_y_continuous() +
   annotate('text', x = 7, y = 150, label = '660 genes \n Upregulated \n log2foldchange >1 \n padj <0.05', color = 'Red', size = 6)+
@@ -349,14 +348,11 @@ top_20_upreg_genes_HPS1 = results_HPS_Untreated %>%
   filter(log2FoldChange >1, padj< 0.05) %>% 
   arrange(padj)%>% dplyr::slice(1:20)
 
-
-#write.csv(as.data.frame(top_upreg_genes_HPS1), file = '/Users/hari/RNAseq/AnalysisR/Output_files/upregulatedinHPS1.csv')
-
 top_20_down_genes_HPS1 <-  results_HPS_Untreated%>%
   filter(log2FoldChange < -1, padj< 0.05) %>% 
   arrange(padj)%>% dplyr::slice(1:20)
 
-#write.csv(as.data.frame(top_down_genes_HPS1), file = '/Users/hari/RNAseq/AnalysisR/Output_files/DownregulatedinHPS1.csv')
+
 # y axis negative logarithm to the base 10 of the t-test p values
 volcano_plot2 <- ggplot(data=results_HPS_Untreated, aes(x=log2FoldChange, y=-log10(padj))) +
   geom_point(data=results_HPS_Untreated, size=1, colour="gray",aes(text = symbol)) + 
@@ -386,12 +382,10 @@ volcano_plot2
 
 # Generating rank file
 
-all_genes_rnk <-  read.csv('/Users/hari/RNAseq/AnalysisR/output_data/all_genes.csv')
+all_genes_rnk <-  read.csv('./data//all_genes.csv')
 
 all_genes_rnk <- all_genes_rnk %>% arrange(padj)
 all_genes_rnk$symbol <- toupper(all_genes_rnk$symbol)
-
-#x<- x %>% filter(padj < 0.25)
 all_genes_rnk$fcsign <- sign(all_genes_rnk$log2FoldChange)
 all_genes_rnk$logP=-log10(all_genes_rnk$pvalue)
 all_genes_rnk$metric= all_genes_rnk$logP/all_genes_rnk$fcsign
@@ -403,10 +397,10 @@ y<- y[!duplicated(y$symbol),]
 head(y)
 
 
-#write.table(y,file='/Users/hari/RNAseq/AnalysisR/output_data/hari_de.rnk',quote=F,sep="\t",row.names=F)
+#write.table(y,file='./data/de.rnk',quote=F,sep="\t",row.names=F)
 
-Reactome_up <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/gsea_report_for_na_pos_1551207478364.csv')
-Reactome_down <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/gsea_report_for_na_neg_1551207478364.csv')
+Reactome_up <- read.csv('./data/gsea_report_for_na_pos_1551207478364.csv')
+Reactome_down <- read.csv('./data/gsea_report_for_na_neg_1551207478364.csv')
 Reactome_up$NAME <- gsub("_", " ",  Reactome_up$NAME)
 Reactome_up$NAME <-gsub("REACTOME", " ",  Reactome_up$NAME) 
 Reactome_up <- Reactome_up %>% filter(FDR.q.val < 0.05) %>% dplyr::slice(1:40)
@@ -439,8 +433,8 @@ ggplot(Reactome_down, aes(reorder(NAME, NES), NES)) +
   theme(legend.position="none")+
   geom_text(aes(label=SIZE), size=4,colour = 'black',position = position_stack(vjust = -0.40))
 
-KEGG_up <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/gsea_report_for_na_pos_KEGG_1551210816292.csv')
-KEGG_down <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/gsea_report_for_na_neg_KEGG_1551210816292.csv')
+KEGG_up <- read.csv('./data/gsea_report_for_na_pos_KEGG_1551210816292.csv')
+KEGG_down <- read.csv('./data/gsea_report_for_na_neg_KEGG_1551210816292.csv')
 KEGG_up $NAME <- gsub("_", " ",  KEGG_up $NAME)
 KEGG_up $NAME <-gsub("KEGG", " ",  KEGG_up$NAME) 
 KEGG_up  <-   KEGG_up %>% filter(FDR.q.val < 0.05) %>% dplyr::slice(1:35)
@@ -476,8 +470,8 @@ ggplot(KEGG_down, aes(reorder(NAME, NES), NES)) +
 
 # Hall mark Pathways
 
-Hallmark_up <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/gsea_report_for_na_pos_hallmark_1551282126528.csv')
-Hallmark_down <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/gsea_report_for_na_neg_hallmark_551282126528.csv')
+Hallmark_up <- read.csv('./data/gsea_report_for_na_pos_hallmark_1551282126528.csv')
+Hallmark_down <- read.csv('./data/gsea_report_for_na_neg_hallmark_551282126528.csv')
 Hallmark_up$NAME <- gsub("_", " ",  Hallmark_up$NAME)
 Hallmark_up$NAME <-gsub("HALLMARK", " ",  Hallmark_up$NAME) 
 Hallmark_up <-   Hallmark_up %>% filter(FDR.q.val < 0.05) %>% dplyr::slice(1:40)
@@ -515,12 +509,12 @@ ggplot(Hallmark_down, aes(reorder(NAME, NES), NES)) +
 
 ## pathway exploration
 
-pathway_genes <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/pathway_data/Short_listed_expression/total_genes.csv')
+pathway_genes <- read.csv('./data/total_genes.csv')
 #pathway_genes <- pathway_genes %>% mutate(simple_ttest = as.numeric(simple_ttest))
 str(pathway_genes)
 # run from these for other pathways
 #countmatrix_symbol <- read.csv('./data/foldchange_raw_values_rep_wt.csv')
-test <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/pathway_data/HALLMARK_HYPOXIA.csv')
+test <- read.csv('./data/HALLMARK_HYPOXIA.csv')
 #count <- count %>% mutate(Genename = tolower(Genename)) %>% mutate(Genename = capitalize(Genename))
 filtered_genes<- pathway_genes[pathway_genes[,9] %in% test[,2], ]
 filtered_genes <- filtered_genes %>%  filter(padj< 0.05)  %>% arrange(padj)
@@ -531,7 +525,7 @@ filtered_genes <- filtered_genes %>%  filter(padj< 0.05)  %>% arrange(padj)
 
 ### BAR PLOT 
 
-genes_x <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/pathway_data/finalpathwaygenes.csv')
+genes_x <- read.csv('./data/finalpathwaygenes.csv')
 genes_x$pathway <- gsub("_", " ",  genes_x$pathway)
 #genes_x<- genes_x[!duplicated(genes_x$Genename),]
 c <- genes_x %>%  mutate(downregulated = log2FoldChange < 0) %>%  filter(downregulated == TRUE) %>%
@@ -567,10 +561,10 @@ ggplot(cd.long, aes(reorder(pathway, count), count, fill = Genes)) +
 # pathview
 
 ## showing all genes in pathway map 
-
-pathway_genes2 <- read.csv('/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/pathway_data/Short_listed_expression/total_genes.csv', stringsAsFactors = FALSE)
+#https://www.genome.jp/kegg/pathway.html for pathids
+pathway_genes2 <- read.csv('./data/total_genes.csv', stringsAsFactors = FALSE)
 #pathway_genes2 <- pathway_genes2 %>% mutate(simple_ttest = as.numeric(simple_ttest))
-test2 <- read.csv('/Users/hari/RNAseq/data/transfac_hif1a.csv')
+test2 <- read.csv('./data/KEGG_TGF_BETA_SIGNALING_PATHWAY.csv')
 filtered_genes2<- pathway_genes2[pathway_genes2[,9] %in% test2[,2], ] 
 #write.csv(as.data.frame(filtered_genes2), file = '/Users/hari/RNAseq/AnalysisR/Output_files/output datacamp DESeq2/pathway_data/tgfb1_unfiltered.csv')
 
@@ -578,12 +572,13 @@ pathway_genes_filtered <- pathway_genes2 %>% filter(padj< 0.05)
 
 gene.data <- as.numeric(filtered_genes2$log2FoldChange)
 names(gene.data) <- filtered_genes2$symbol
-pathID <- "04066"
+pathID <- "04350"
 pview <- pathview(gene.data=gene.data,
                   gene.idtype="symbol",
                   pathway.id=pathID,
                   species="mmu",
-                  out.suffix="kegg_HIF1a",
+                  kegg.dir="./data/Kegg_pathways/",
+                  out.suffix="kegg_TGFb1",
                   kegg.native=T,
                   same.layer=T)
 
@@ -594,14 +589,14 @@ pathID <- "04350"
 pview <- pathview(gene.data=gene.data,
                   gene.idtype="symbol",
                   pathway.id=pathID,
+                  kegg.dir="./data/Kegg_pathways/",
                   species="mmu",
                   out.suffix="kegg_tgftest_filtered",
                   kegg.native=T,
                   same.layer=T)
 
 ## pathview KEGG pathways
-data(korg)
-head(korg, 100)
+
 
 ##### expression plot for hypoxia genes 
 colData2 <- colData %>% rownames_to_column(var = 'samplename')
