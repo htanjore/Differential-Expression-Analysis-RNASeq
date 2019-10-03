@@ -4,8 +4,8 @@
  
 2.Deseq2 from Bioconductor was used for this analysis. 
 
-3.The other codes include 
+3.Also included in the code 
 
-    a.pathview to generate specific pathways based on DE genes. 
-    b.Generate Rank file for Downstream analysis using Gene Set Enrichment Analysis.
-    c. Visualizations of Pathways.
+    a.Pathview to generate specific pathways based on DE genes. 
+    b.Generate Rank file for Downstream analysis using Gene Set Enrichment Analysis(GSEA).
+    c.Visualizations of Enriched Pathways.
